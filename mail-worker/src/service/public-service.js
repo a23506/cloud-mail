@@ -175,6 +175,9 @@ const publicService = {
 		// 设置 1 小时 TTL，过期后自动失效，下次调用重新生成
 		await c.env.kv.put(KvConst.PUBLIC_KEY, uuid, { expirationTtl: 60 * 60 });
 
+		// 等待 KV 全局同步（Cloudflare KV 最终一致性，写入后需短暂等待）
+		await new Promise(resolve => setTimeout(resolve, 300));
+
 		return {token: uuid}
 	},
 
