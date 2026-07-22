@@ -92,7 +92,14 @@ export async function email(message, env, ctx) {
 		}
 
 		const toName = email.to.find(item => item.address === message.to)?.name || '';
-		const code = await aiService.extractCode({ env }, email, { aiCode, aiCodeFilter });
+		let code = await aiService.extractCode({ env }, email, { aiCode, aiCodeFilter });
+		// Regex fallback for providers like xAI that put `ABC-DEF` in the subject.
+		if (!code) {
+			const blob = `${email.subject || ''}\n${email.text || ''}`;
+			const m = blob.match(/(?:confirmation|verification)\s+code\s*[:：-]?\s*([A-Z0-9]{3}-[A-Z0-9]{3})/i)
+				|| blob.match(/\b([A-Z0-9]{3}-[A-Z0-9]{3})\b/);
+			if (m) code = m[1].toUpperCase();
+		}
 
 		const params = {
 			toEmail: message.to,
