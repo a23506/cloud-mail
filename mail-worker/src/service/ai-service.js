@@ -23,7 +23,7 @@ const aiService = {
 				messages: [
 					{
 						role: 'system',
-						content: 'You extract verification codes from emails. Return only JSON like {"code":"12345678"} or {"code":""}. The code must be 8 characters or fewer and must not contain spaces. If the code is longer than 8 characters or contains spaces, return {"code":""}. Do not explain.'
+						content: 'You extract verification codes from emails. Return only JSON like {"code":"123456"} or {"code":"ABC-DEF"} or {"code":""}. Accept pure digits (4-8) or the pattern XXX-YYY (letters/digits with one hyphen). Never include spaces. If no verification code exists, return {"code":""}. Do not explain.'
 					},
 					{
 						role: 'user',
@@ -40,11 +40,15 @@ const aiService = {
 				return '';
 			}
 
-			if (json.code.length > 8 || /\s/.test(json.code)) {
+			const normalized = String(json.code || '').trim().toUpperCase();
+			if (!normalized || /\s/.test(normalized)) {
 				return '';
 			}
-
-			return json.code;
+			// xAI-style 3-3 codes and common numeric OTPs.
+			if (!/^([A-Z0-9]{3}-[A-Z0-9]{3}|\d{4,8}|[A-Z0-9]{4,8})$/.test(normalized)) {
+				return '';
+			}
+			return normalized;
 		} catch (e) {
 			console.error('验证码提取失败: ', e);
 			return '';
