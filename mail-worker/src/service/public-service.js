@@ -19,8 +19,9 @@ const publicService = {
 
 	async emailList(c, params) {
 
-		let { toEmail, content, subject, sendName, sendEmail, timeSort, num, size, type , isDel } = params
+		let { toEmail, content, subject, sendName, sendEmail, timeSort, num, size, type , isDel, light } = params
 
+		// Always expose code/status for automation clients (registration bots).
 		const query = orm(c).select({
 				emailId: email.emailId,
 				sendEmail: email.sendEmail,
@@ -29,6 +30,8 @@ const publicService = {
 				toEmail: email.toEmail,
 				toName: email.toName,
 				type: email.type,
+				status: email.status,
+				code: email.code,
 				createTime: email.createTime,
 				content: email.content,
 				text: email.text,
@@ -51,7 +54,8 @@ const publicService = {
 		let conditions = []
 
 		if (toEmail) {
-			conditions.push(sql`${email.toEmail} COLLATE NOCASE LIKE ${toEmail}`)
+			// Exact case-insensitive match (LIKE without wildcards is easy to misread / break).
+			conditions.push(sql`lower(${email.toEmail}) = lower(${String(toEmail).trim()})`)
 		}
 
 		if (sendEmail) {
